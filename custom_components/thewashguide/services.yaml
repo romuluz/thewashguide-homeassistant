@@ -1,0 +1,117 @@
+create_task:
+  name: Create a wash task
+  description: >-
+    Post an open wash task to the household board, which anyone in the house can
+    claim. Needs a control key (PRO).
+  fields:
+    summary:
+      name: Summary
+      description: What the wash is, in a few words.
+      example: Towels
+      selector:
+        text:
+    note:
+      name: Note
+      description: An optional line for whoever picks it up.
+      example: The blue basket in the hall.
+      selector:
+        text:
+    item_type:
+      name: Item type
+      description: >-
+        What is being washed. Defaults to a mixed load when left out.
+      example: TOWELS
+      selector:
+        text:
+    shade:
+      name: Shade
+      description: WHITE, LIGHT, MID, DARK or MIXED.
+      example: WHITE
+      selector:
+        text:
+    fabric:
+      name: Fabric
+      description: COTTON, LINEN, WOOL, SILK, POLYESTER, MIXED and so on.
+      example: COTTON
+      selector:
+        text:
+    load_size:
+      name: Load size
+      description: SMALL, MEDIUM or FULL.
+      example: FULL
+      selector:
+        text:
+    tokens:
+      name: Reward
+      description: >-
+        Pocket money attached to the task. Only an admin or manager may attach a
+        reward, exactly as in the app.
+      example: 3
+      selector:
+        number:
+          min: 0
+          max: 99
+
+cancel_task:
+  name: Cancel a task
+  description: >-
+    Cancel a task still waiting on the board. Needs a control key (PRO).
+  fields:
+    task_id:
+      name: Task
+      description: >-
+        The task's id, which rides in the attributes of the pending-tasks sensor.
+      required: true
+      example: 6f1c2b90-6f21-4a2b-9a1e-2a0f6c1b7d55
+      selector:
+        text:
+
+request_maintenance_wash:
+  name: Ask the house for a maintenance wash
+  description: >-
+    Put the machine's maintenance wash on the household board. Open to the house
+    by default, because the machine is nobody's in particular. Needs a control
+    key (PRO).
+  fields:
+    assignee_name:
+      name: Whose turn
+      description: >-
+        A household member's name, as it appears in the app. Left out (or not
+        recognised), the job is posted open to the house.
+      example: Oliver
+      selector:
+        text:
+    note:
+      name: Note
+      description: An optional line for whoever runs it.
+      example: Use the descaler under the sink.
+      selector:
+        text:
+
+log_machine_clean:
+  name: Log a machine clean
+  description: >-
+    Record that the machine was looked after: the maintenance wash has finished,
+    or the filter has been emptied. If the maintenance wash is waiting on the
+    board, this completes that task rather than logging a second, parallel truth.
+    Needs a control key (PRO).
+  fields:
+    kind:
+      name: What was done
+      description: The maintenance wash, or the pump filter.
+      default: maintenance_wash
+      selector:
+        select:
+          options:
+            - label: Maintenance wash
+              value: maintenance_wash
+            - label: Filter clean
+              value: filter_clean
+    by:
+      name: Who did it
+      description: >-
+        The name to put in the household's care record. Defaults to whoever owns
+        the control key.
+      example: Oliver
+      selector:
+        text:

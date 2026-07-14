@@ -1,0 +1,11 @@
+{
+  "domain": "thewashguide",
+  "name": "The Wash Guide",
+  "codeowners": ["@romuluz"],
+  "config_flow": true,
+  "documentation": "https://thewashguide.app/smart-home",
+  "integration_type": "service",
+  "iot_class": "cloud_polling",
+  "requirements": [],
+  "version": "0.2.0"
+}

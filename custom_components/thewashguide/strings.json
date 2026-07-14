@@ -1,0 +1,36 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect The Wash Guide",
+        "description": "In The Wash Guide app, open Settings, find Smart home, and tap Generate connect key. Paste the key here. The control key is optional: it lets Home Assistant act as well as read (post a task, ask the house for a maintenance wash, log a clean), and it needs PRO. You can add it later.",
+        "data": {
+          "api_key": "Connect key",
+          "control_key": "Control key (optional, PRO)"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "That key was not accepted. Generate a fresh one in the app and try again.",
+      "cannot_connect": "Could not reach The Wash Guide cloud. Check your connection and try again.",
+      "invalid_control_key": "That control key was not accepted. Generate a fresh one in the app and try again.",
+      "not_control_key": "That is a connect key, not a control key. Connect keys can only read. Generate a control key in the app (it needs PRO) and paste that one here."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "The Wash Guide",
+        "description": "A control key lets Home Assistant act as well as read: post a task to the household board, ask the house for a maintenance wash, and record the clean when the cycle finishes. Generate one in the app under Settings, Smart home; it needs PRO. Leave the box empty to take the ability to act away again, and reading carries on as before.",
+        "data": {
+          "control_key": "Control key (optional, PRO)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Could not reach The Wash Guide cloud. Check your connection and try again.",
+      "invalid_control_key": "That control key was not accepted. Generate a fresh one in the app and try again.",
+      "not_control_key": "That is a connect key, not a control key. Connect keys can only read. Generate a control key in the app (it needs PRO) and paste that one here."
+    }
+  }
+}
