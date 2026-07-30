@@ -21,9 +21,10 @@
     "step": {
       "init": {
         "title": "The Wash Guide",
-        "description": "A control key lets Home Assistant act as well as read: post a task to the household board, ask the house for a maintenance wash, and record the clean when the cycle finishes. Generate one in the app under Settings, Smart home; it needs PRO. Leave the box empty to take the ability to act away again, and reading carries on as before.",
+        "description": "A control key lets Home Assistant act as well as read: post a task to the household board, ask the house for a maintenance wash, and record the clean when the cycle finishes. Generate one in the app under Settings, Smart home; it needs PRO. Leave the box empty to take the ability to act away again, and reading carries on as before.\n\nThe poll interval follows your plan by default: every minute for a PRO household, every 15 minutes otherwise. Set a number of minutes to poll less often than that; it can never poll more often than your plan allows.",
         "data": {
-          "control_key": "Control key (optional, PRO)"
+          "control_key": "Control key (optional, PRO)",
+          "update_interval": "Poll interval in minutes (0 = automatic)"
         }
       }
     },

@@ -32,7 +32,12 @@ Four bus events for automations: `thewashguide_wash_logged`,
    The Wash Guide → paste the key.
 
 The connect key is read-only, scoped to your household's laundry status, and
-can be revoked in the app at any time. Data refreshes about once a minute.
+can be revoked in the app at any time. Data refreshes every 15 minutes, or
+every minute for a PRO household: the cloud tells the integration which
+cadence your plan allows and it paces itself, so an upgrade takes effect on
+the next poll with nothing to set up. If you would rather poll less often
+than your plan allows, set an interval in minutes under **Configure**; it can
+never poll more often.
 
 ## Acting, not just reading (needs a control key)
 

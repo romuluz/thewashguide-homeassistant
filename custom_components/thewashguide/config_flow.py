@@ -21,7 +21,7 @@ from homeassistant.core import callback
 from homeassistant.exceptions import ConfigEntryAuthFailed, HomeAssistantError
 
 from . import call_control, fetch_feed
-from .const import CONF_API_KEY, CONF_CONTROL_KEY, DOMAIN
+from .const import CONF_API_KEY, CONF_CONTROL_KEY, CONF_UPDATE_INTERVAL, DOMAIN
 
 STEP_USER_SCHEMA = vol.Schema(
     {
@@ -92,7 +92,7 @@ class WashGuideConfigFlow(ConfigFlow, domain=DOMAIN):
 
 
 class WashGuideOptionsFlow(OptionsFlow):
-    """Add, replace or clear the control key after the fact."""
+    """Add, replace or clear the control key; choose a slower poll cadence."""
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
@@ -101,6 +101,9 @@ class WashGuideOptionsFlow(OptionsFlow):
         current = self.config_entry.options.get(
             CONF_CONTROL_KEY, self.config_entry.data.get(CONF_CONTROL_KEY, "")
         )
+        current_interval = self.config_entry.options.get(
+            CONF_UPDATE_INTERVAL, self.config_entry.data.get(CONF_UPDATE_INTERVAL, 0)
+        ) or 0
         if user_input is not None:
             control = (user_input.get(CONF_CONTROL_KEY) or "").strip()
             # An empty box is a deliberate revocation: the household keeps
@@ -109,11 +112,25 @@ class WashGuideOptionsFlow(OptionsFlow):
             if problem:
                 errors[CONF_CONTROL_KEY] = problem
             else:
-                return self.async_create_entry(data={CONF_CONTROL_KEY: control})
+                return self.async_create_entry(
+                    data={
+                        CONF_CONTROL_KEY: control,
+                        CONF_UPDATE_INTERVAL: user_input.get(CONF_UPDATE_INTERVAL, 0),
+                    }
+                )
         return self.async_show_form(
             step_id="init",
             data_schema=vol.Schema(
-                {vol.Optional(CONF_CONTROL_KEY, default=current): str}
+                {
+                    vol.Optional(CONF_CONTROL_KEY, default=current): str,
+                    # Minutes between polls; 0 means automatic (the cadence the
+                    # plan allows: every minute for PRO, every 15 for free).
+                    # A chosen value can only ever slow the poll down; the
+                    # coordinator holds it to the plan's floor.
+                    vol.Optional(CONF_UPDATE_INTERVAL, default=current_interval): vol.All(
+                        vol.Coerce(int), vol.Range(min=0, max=1440)
+                    ),
+                }
             ),
             errors=errors,
         )

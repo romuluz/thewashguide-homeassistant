@@ -30,7 +30,9 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from .const import (
     CONF_API_KEY,
     CONF_CONTROL_KEY,
+    CONF_UPDATE_INTERVAL,
     CONTROL_URL,
+    DEFAULT_UPDATE_INTERVAL_SECONDS,
     DOMAIN,
     EVENT_MACHINE_CLEANED,
     EVENT_TASK_COMPLETED,
@@ -41,7 +43,6 @@ from .const import (
     SERVICE_CREATE_TASK,
     SERVICE_LOG_MACHINE_CLEAN,
     SERVICE_REQUEST_MAINTENANCE,
-    UPDATE_INTERVAL_SECONDS,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -111,16 +112,23 @@ class WashGuideCoordinator(DataUpdateCoordinator[dict]):
     """Polls the feed and fires bus events on fresh activity."""
 
     def __init__(
-        self, hass: HomeAssistant, api_key: str, control_key: str | None
+        self,
+        hass: HomeAssistant,
+        api_key: str,
+        control_key: str | None,
+        requested_minutes: int | None = None,
     ) -> None:
         super().__init__(
             hass,
             _LOGGER,
             name=DOMAIN,
-            update_interval=timedelta(seconds=UPDATE_INTERVAL_SECONDS),
+            update_interval=timedelta(seconds=DEFAULT_UPDATE_INTERVAL_SECONDS),
         )
         self._api_key = api_key
         self.control_key = control_key
+        # The user's chosen cadence, if any. The feed's declared floor wins
+        # whenever it is slower; see _pace_from_feed.
+        self._requested_seconds = requested_minutes * 60 if requested_minutes else None
         self._last_wash_ts: str | None = None
         self._last_care_ts: str | None = None
         self._seen_completions: set[str] = set()
@@ -142,6 +150,24 @@ class WashGuideCoordinator(DataUpdateCoordinator[dict]):
                 return task
         return None
 
+    def _pace_from_feed(self, data: dict) -> None:
+        """Match the poll cadence to the floor the feed declares.
+
+        The feed says how often this key may poll (min_poll_seconds: a minute
+        for a PRO household, fifteen for free). The user may choose slower in
+        the options, never faster: the floor is the plan's, not ours. A
+        household that upgrades or lapses changes cadence on its next poll
+        with nothing to re-configure. A feed without the field (an older
+        deploy) changes nothing.
+        """
+        floor = data.get("min_poll_seconds")
+        if not isinstance(floor, int) or floor <= 0:
+            return
+        seconds = max(self._requested_seconds, floor) if self._requested_seconds else floor
+        if self.update_interval != timedelta(seconds=seconds):
+            _LOGGER.info("The Wash Guide will poll every %d seconds", seconds)
+            self.update_interval = timedelta(seconds=seconds)
+
     async def _async_update_data(self) -> dict:
         try:
             data = await fetch_feed(self.hass, self._api_key)
@@ -149,6 +175,8 @@ class WashGuideCoordinator(DataUpdateCoordinator[dict]):
             raise
         except Exception as err:  # noqa: BLE001 - surfaced as UpdateFailed
             raise UpdateFailed(f"feed unavailable: {err}") from err
+
+        self._pace_from_feed(data)
 
         # A new wash since the last poll becomes an automation trigger.
         wash = data.get("last_wash")
@@ -257,8 +285,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     control_key = entry.options.get(
         CONF_CONTROL_KEY, entry.data.get(CONF_CONTROL_KEY)
     )
+    requested_minutes = entry.options.get(
+        CONF_UPDATE_INTERVAL, entry.data.get(CONF_UPDATE_INTERVAL)
+    )
     coordinator = WashGuideCoordinator(
-        hass, entry.data[CONF_API_KEY], control_key or None
+        hass,
+        entry.data[CONF_API_KEY],
+        control_key or None,
+        requested_minutes or None,
     )
     await coordinator.async_config_entry_first_refresh()
 

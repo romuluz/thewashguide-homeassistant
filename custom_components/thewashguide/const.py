@@ -13,7 +13,17 @@ CONF_API_KEY = "api_key"
 # never have a key that could write sitting in its config entry.
 CONF_CONTROL_KEY = "control_key"
 
-UPDATE_INTERVAL_SECONDS = 60
+# The starting poll cadence, matching the free floor. The feed declares the
+# floor each key has actually earned in every response (min_poll_seconds: 60
+# for a PRO household, 900 free) and the coordinator paces itself by it, so
+# this constant only governs the first poll before the cloud has spoken.
+DEFAULT_UPDATE_INTERVAL_SECONDS = 900
+
+# The user's own choice of cadence, in minutes, from the options flow. It can
+# slow the poll below the plan's floor (a courtesy to batteries and quotas);
+# it can never speed it past the floor, because the floor is not ours to give.
+# Zero or absent means automatic: poll at whatever floor the feed declares.
+CONF_UPDATE_INTERVAL = "update_interval"
 
 EVENT_WASH_LOGGED = "thewashguide_wash_logged"
 EVENT_TASK_COMPLETED = "thewashguide_task_completed"
