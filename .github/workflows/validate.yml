@@ -1,8 +1,9 @@
 # The two checks the HACS default store requires: HACS's own validation and
 # Home Assistant's hassfest. They run on the PUBLIC MIRROR (this folder is
-# copied there by tools/publish_ha_integration.sh); the HACS action's brands
-# check stays red until the home-assistant/brands PR for `thewashguide` is
-# merged, and that is expected, not a defect here.
+# copied there by tools/publish_ha_integration.sh). The brand images live in
+# custom_components/thewashguide/brand/ (the post-2026.3 mechanism; the old
+# home-assistant/brands PR route is closed to custom integrations), which is
+# what the HACS action's brands check reads.
 name: Validate
 
 on:
