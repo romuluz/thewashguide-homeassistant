@@ -24,9 +24,12 @@ Four bus events for automations: `thewashguide_wash_logged`,
 
 ## Install
 
-1. Copy `custom_components/thewashguide` into your Home Assistant `config/
-   custom_components/` folder (or add this repository as a custom repository
-   in HACS), then restart Home Assistant.
+[![Open your Home Assistant instance and show this repository inside HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=romuluz&repository=thewashguide-homeassistant&category=integration)
+
+1. In HACS, search for **The Wash Guide** and download it (it is in the HACS
+   default store; the badge above jumps your own instance straight to it),
+   then restart Home Assistant. No HACS? Copy `custom_components/thewashguide`
+   into your `config/custom_components/` folder instead.
 2. In The Wash Guide app: Settings → Smart home → Generate connect key.
 3. In Home Assistant: Settings → Devices & services → Add integration →
    The Wash Guide → paste the key.
