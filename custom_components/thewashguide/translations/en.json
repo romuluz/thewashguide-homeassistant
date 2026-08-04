@@ -14,7 +14,8 @@
       "invalid_auth": "That key was not accepted. Generate a fresh one in the app and try again.",
       "cannot_connect": "Could not reach The Wash Guide cloud. Check your connection and try again.",
       "invalid_control_key": "That control key was not accepted. Generate a fresh one in the app and try again.",
-      "not_control_key": "That is a connect key, not a control key. Connect keys can only read. Generate a control key in the app (it needs PRO) and paste that one here."
+      "not_control_key": "That is a connect key, not a control key. Connect keys can only read. Generate a control key in the app (it needs PRO) and paste that one here.",
+      "pro_lapsed": "The PRO subscription behind that control key has ended, so it can read but not act. Resubscribe in the app and the same key comes back to life."
     }
   },
   "options": {
@@ -31,7 +32,8 @@
     "error": {
       "cannot_connect": "Could not reach The Wash Guide cloud. Check your connection and try again.",
       "invalid_control_key": "That control key was not accepted. Generate a fresh one in the app and try again.",
-      "not_control_key": "That is a connect key, not a control key. Connect keys can only read. Generate a control key in the app (it needs PRO) and paste that one here."
+      "not_control_key": "That is a connect key, not a control key. Connect keys can only read. Generate a control key in the app (it needs PRO) and paste that one here.",
+      "pro_lapsed": "The PRO subscription behind that control key has ended, so it can read but not act. Resubscribe in the app and the same key comes back to life."
     }
   }
 }

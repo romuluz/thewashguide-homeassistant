@@ -38,9 +38,10 @@ The connect key is read-only, scoped to your household's laundry status, and
 can be revoked in the app at any time. Data refreshes every 15 minutes, or
 every minute for a PRO household: the cloud tells the integration which
 cadence your plan allows and it paces itself, so an upgrade takes effect on
-the next poll with nothing to set up. If you would rather poll less often
-than your plan allows, set an interval in minutes under **Configure**; it can
-never poll more often.
+the next poll with nothing to set up, and a lapse travels the same wire back
+to the 15-minute cadence. If you would rather poll less often than your plan
+allows, set an interval in minutes under **Configure**; it can never poll
+more often.
 
 ## Acting, not just reading (needs a control key)
 
@@ -56,7 +57,11 @@ services:
 | `thewashguide.log_machine_clean` | Record that the machine was cleaned, or the filter emptied |
 
 The key's owner is the actor, and the household's own rules travel with it:
-rewards need an admin or a manager, and juniors cannot create tasks.
+rewards need an admin or a manager, and juniors cannot create tasks. The key
+is also only as alive as the subscription behind it: if the owner's PRO ends,
+the cloud refuses control calls with a plain message (reading carries on
+untouched), and resubscribing brings the same key back to life without
+regenerating anything.
 
 A wash task cannot be completed from Home Assistant, and a maintenance wash
 can. That is deliberate. Completing a wash means a person ran a load of

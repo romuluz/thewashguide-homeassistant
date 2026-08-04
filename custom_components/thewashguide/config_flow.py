@@ -46,6 +46,8 @@ async def _check_control_key(hass, key: str) -> str | None:
             return "not_control_key"
         if "invalid key" in text or "missing key" in text:
             return "invalid_control_key"
+        if "PRO subscription" in text:
+            return "pro_lapsed"
         return "cannot_connect"
     except Exception:  # noqa: BLE001
         return "cannot_connect"
