@@ -9,6 +9,12 @@ machine gets cleaned, for automations.
 With a PRO control key it also acts: posting tasks to the household board,
 asking the house for a maintenance wash, and recording the clean when the
 cycle finishes.
+
+Pointed at a power sensor (a metering plug on the machine), it also measures:
+cycles are detected locally from the power curve, announced on the local bus,
+and summarised to the cloud so the household's record can learn what its own
+machine actually does. See cycle_watch.py; raw power data never leaves the
+house.
 """
 
 from __future__ import annotations
@@ -30,6 +36,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from .const import (
     CONF_API_KEY,
     CONF_CONTROL_KEY,
+    CONF_POWER_ENTITY,
     CONF_UPDATE_INTERVAL,
     CONTROL_URL,
     DEFAULT_UPDATE_INTERVAL_SECONDS,
@@ -44,6 +51,7 @@ from .const import (
     SERVICE_LOG_MACHINE_CLEAN,
     SERVICE_REQUEST_MAINTENANCE,
 )
+from .cycle_watch import CycleWatcher
 
 _LOGGER = logging.getLogger(__name__)
 PLATFORMS = ["sensor", "binary_sensor"]
@@ -298,6 +306,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+
+    # The measured machine (WG-16a): with a power sensor chosen in the options,
+    # cycles are detected locally and summarised to the cloud with the READ
+    # key; measurement needs no more authority than reading. Reload (options
+    # change, unload) tears the watcher down with the entry.
+    power_entity = entry.options.get(
+        CONF_POWER_ENTITY, entry.data.get(CONF_POWER_ENTITY)
+    )
+    if power_entity:
+        watcher = CycleWatcher(hass, entry.data[CONF_API_KEY], power_entity)
+        watcher.start()
+        entry.async_on_unload(watcher.stop)
 
     # The services exist whether or not a key is present; without one they say
     # exactly what is missing, which is friendlier than not appearing at all.

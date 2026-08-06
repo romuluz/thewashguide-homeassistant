@@ -2,10 +2,14 @@
 
 DOMAIN = "thewashguide"
 
-# The cloud endpoints. Both are public by design and serve nothing without a
-# valid key from the app: the feed reads, the control endpoint acts.
+# The cloud endpoints. All public by design and serving nothing without a
+# valid key from the app: the feed reads, the control endpoint acts, and the
+# cycle endpoint measures (WG-16a), which is the third kind of traffic. The
+# cycle endpoint takes the CONNECT key: a cycle summary claims nothing about
+# laundry or people, so it needs no more authority than reading does.
 FEED_URL = "https://roedghepqpkbwswmfgfl.supabase.co/functions/v1/smart-home-feed"
 CONTROL_URL = "https://roedghepqpkbwswmfgfl.supabase.co/functions/v1/smart-home-control"
+CYCLE_URL = "https://roedghepqpkbwswmfgfl.supabase.co/functions/v1/smart-home-cycle"
 
 CONF_API_KEY = "api_key"
 # The optional PRO control key. Held separately from the read key on purpose:
@@ -25,10 +29,19 @@ DEFAULT_UPDATE_INTERVAL_SECONDS = 900
 # Zero or absent means automatic: poll at whatever floor the feed declares.
 CONF_UPDATE_INTERVAL = "update_interval"
 
+# The power sensor watched for cycle detection (WG-16a), from the options
+# flow. Optional; absent means the measured machine is simply off. Monitoring
+# only, always: if the plug behind the sensor can switch, we never touch it.
+CONF_POWER_ENTITY = "power_entity"
+
 EVENT_WASH_LOGGED = "thewashguide_wash_logged"
 EVENT_TASK_COMPLETED = "thewashguide_task_completed"
 EVENT_TASK_CREATED = "thewashguide_task_created"
 EVENT_MACHINE_CLEANED = "thewashguide_machine_cleaned"
+# Fired locally the moment a cycle is detected as finished, before (and
+# whether or not) the summary reaches the cloud. Free-tier value: the event
+# works with no PRO and no working internet connection.
+EVENT_CYCLE_FINISHED = "thewashguide_cycle_finished"
 
 # The services the control key unlocks.
 SERVICE_CREATE_TASK = "create_task"

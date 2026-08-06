@@ -19,9 +19,16 @@ from homeassistant.config_entries import (
 )
 from homeassistant.core import callback
 from homeassistant.exceptions import ConfigEntryAuthFailed, HomeAssistantError
+from homeassistant.helpers.selector import EntitySelector, EntitySelectorConfig
 
 from . import call_control, fetch_feed
-from .const import CONF_API_KEY, CONF_CONTROL_KEY, CONF_UPDATE_INTERVAL, DOMAIN
+from .const import (
+    CONF_API_KEY,
+    CONF_CONTROL_KEY,
+    CONF_POWER_ENTITY,
+    CONF_UPDATE_INTERVAL,
+    DOMAIN,
+)
 
 STEP_USER_SCHEMA = vol.Schema(
     {
@@ -94,7 +101,7 @@ class WashGuideConfigFlow(ConfigFlow, domain=DOMAIN):
 
 
 class WashGuideOptionsFlow(OptionsFlow):
-    """Add, replace or clear the control key; choose a slower poll cadence."""
+    """Control key, poll cadence, and the machine's power sensor."""
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
@@ -106,6 +113,9 @@ class WashGuideOptionsFlow(OptionsFlow):
         current_interval = self.config_entry.options.get(
             CONF_UPDATE_INTERVAL, self.config_entry.data.get(CONF_UPDATE_INTERVAL, 0)
         ) or 0
+        current_power = self.config_entry.options.get(
+            CONF_POWER_ENTITY, self.config_entry.data.get(CONF_POWER_ENTITY, "")
+        )
         if user_input is not None:
             control = (user_input.get(CONF_CONTROL_KEY) or "").strip()
             # An empty box is a deliberate revocation: the household keeps
@@ -118,6 +128,9 @@ class WashGuideOptionsFlow(OptionsFlow):
                     data={
                         CONF_CONTROL_KEY: control,
                         CONF_UPDATE_INTERVAL: user_input.get(CONF_UPDATE_INTERVAL, 0),
+                        # Cleared means the measured machine is switched off,
+                        # as deliberately as an emptied control key box.
+                        CONF_POWER_ENTITY: user_input.get(CONF_POWER_ENTITY, ""),
                     }
                 )
         return self.async_show_form(
@@ -131,6 +144,15 @@ class WashGuideOptionsFlow(OptionsFlow):
                     # coordinator holds it to the plan's floor.
                     vol.Optional(CONF_UPDATE_INTERVAL, default=current_interval): vol.All(
                         vol.Coerce(int), vol.Range(min=0, max=1440)
+                    ),
+                    # The machine's power sensor (a metering plug, or the
+                    # machine's own integration). suggested_value rather than
+                    # default so the picker can be cleared to turn it off.
+                    vol.Optional(
+                        CONF_POWER_ENTITY,
+                        description={"suggested_value": current_power or None},
+                    ): EntitySelector(
+                        EntitySelectorConfig(domain="sensor", device_class="power")
                     ),
                 }
             ),

@@ -22,10 +22,11 @@
     "step": {
       "init": {
         "title": "The Wash Guide",
-        "description": "A control key lets Home Assistant act as well as read: post a task to the household board, ask the house for a maintenance wash, and record the clean when the cycle finishes. Generate one in the app under Settings, Smart home; it needs PRO. Leave the box empty to take the ability to act away again, and reading carries on as before.\n\nThe poll interval follows your plan by default: every minute for a PRO household, every 15 minutes otherwise. Set a number of minutes to poll less often than that; it can never poll more often than your plan allows.",
+        "description": "A control key lets Home Assistant act as well as read: post a task to the household board, ask the house for a maintenance wash, and record the clean when the cycle finishes. Generate one in the app under Settings, Smart home; it needs PRO. Leave the box empty to take the ability to act away again, and reading carries on as before.\n\nThe poll interval follows your plan by default: every minute for a PRO household, every 15 minutes otherwise. Set a number of minutes to poll less often than that; it can never poll more often than your plan allows.\n\nIf the washing machine sits on a metering smart plug (or reports power itself), pick that power sensor and The Wash Guide will notice cycles from the power curve: when one finishes, a thewashguide_cycle_finished event fires locally and a small summary (start, end, energy) joins your household's record. Detection happens entirely in your home; raw power readings are never sent anywhere. Monitoring only: if the plug can switch, this integration never touches the switch. Clear the picker to turn it off.",
         "data": {
           "control_key": "Control key (optional, PRO)",
-          "update_interval": "Poll interval in minutes (0 = automatic)"
+          "update_interval": "Poll interval in minutes (0 = automatic)",
+          "power_entity": "Washing machine power sensor (optional)"
         }
       }
     },

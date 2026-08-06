@@ -18,9 +18,9 @@ when that wash was and who ran it, and two due flags (the maintenance wash,
 which falls due on thirty loads or two months, whichever arrives first; and
 the pump filter, which is a quarterly job).
 
-Four bus events for automations: `thewashguide_wash_logged`,
-`thewashguide_task_created`, `thewashguide_task_completed` and
-`thewashguide_machine_cleaned`.
+Five bus events for automations: `thewashguide_wash_logged`,
+`thewashguide_task_created`, `thewashguide_task_completed`,
+`thewashguide_machine_cleaned` and `thewashguide_cycle_finished`.
 
 ## Install
 
@@ -92,6 +92,29 @@ automation:
 If the maintenance wash is already on the board when you call
 `log_machine_clean`, it completes that task rather than logging a second,
 parallel truth.
+
+## The measured machine (optional, needs a metering plug)
+
+If the washing machine sits on a smart plug that meters power (or the machine
+reports power itself), open **Configure** and pick that power sensor. The
+integration then notices cycles from the power curve: watts rise, the cycle is
+running; ten straight minutes of silence, it finished. Soaks, pauses and
+anti-crease tumbling are forgiven, and a blip too short to have washed
+anything is discarded.
+
+When a cycle finishes, two things happen. Locally,
+`thewashguide_cycle_finished` fires on the bus with `started_at`, `ended_at`,
+`duration_seconds`, `energy_kwh`, `peak_watts` and `average_watts`, ready for
+a "machine's done" notification that knows what the cycle actually cost to
+run. And a summary of the same six facts is sent to The Wash Guide, where it
+joins your household's own record, so the app can start learning what your
+machine really does with each kind of wash.
+
+Detection happens entirely in your home and only the summary is uploaded: raw
+power readings never leave the house. Monitoring only, always: if the plug can
+switch, this integration never touches the switch, and never puts itself in
+the machine's power path. One honest caution: a washing machine heats water at
+2 to 3 kW, so use a plug properly rated for it, not a lamp-grade one.
 
 This integration is in early development alongside the app itself; issues and
 automation ideas are very welcome.
