@@ -47,10 +47,12 @@ class WashGuideEntity(CoordinatorEntity[WashGuideCoordinator], SensorEntity):
 
     def __init__(self, coordinator: WashGuideCoordinator, entry: ConfigEntry) -> None:
         super().__init__(coordinator)
+        # The device is the integration, so it carries the app's name; the
+        # household's own name stays on the config entry title.
         household = (coordinator.data.get("household") or {})
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, entry.entry_id)},
-            name=household.get("name") or "The Wash Guide",
+            name="The Wash Guide",
             manufacturer="The Wash Guide",
             model=household.get("label") or "Household",
         )
