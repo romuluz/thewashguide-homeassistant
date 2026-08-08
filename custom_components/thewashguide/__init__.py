@@ -30,6 +30,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.exceptions import ConfigEntryAuthFailed, HomeAssistantError
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
@@ -52,6 +53,7 @@ from .const import (
     SERVICE_REQUEST_MAINTENANCE,
 )
 from .cycle_watch import CycleWatcher
+from .naming import household_display
 
 _LOGGER = logging.getLogger(__name__)
 PLATFORMS = ["sensor", "binary_sensor"]
@@ -176,6 +178,23 @@ class WashGuideCoordinator(DataUpdateCoordinator[dict]):
             _LOGGER.info("The Wash Guide will poll every %d seconds", seconds)
             self.update_interval = timedelta(seconds=seconds)
 
+    def _sync_household_address(self, data: dict) -> None:
+        """Keep the entry title and the device's model reading the household's
+        moniker-led address ("House Townsend"), so a rename or a new moniker
+        chosen in the app lands here within one poll, nothing to reconfigure.
+        The device's NAME stays The Wash Guide; the address is the detail.
+        """
+        address = household_display(data.get("household"))
+        entry = self.config_entry
+        if not address or entry is None:
+            return
+        if entry.title != address:
+            self.hass.config_entries.async_update_entry(entry, title=address)
+        registry = dr.async_get(self.hass)
+        device = registry.async_get_device(identifiers={(DOMAIN, entry.entry_id)})
+        if device and device.model != address:
+            registry.async_update_device(device.id, model=address)
+
     async def _async_update_data(self) -> dict:
         try:
             data = await fetch_feed(self.hass, self._api_key)
@@ -185,6 +204,7 @@ class WashGuideCoordinator(DataUpdateCoordinator[dict]):
             raise UpdateFailed(f"feed unavailable: {err}") from err
 
         self._pace_from_feed(data)
+        self._sync_household_address(data)
 
         # A new wash since the last poll becomes an automation trigger.
         wash = data.get("last_wash")
@@ -304,6 +324,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     )
     await coordinator.async_config_entry_first_refresh()
 
+    # What the entry was set up FROM, so the reload listener can tell a real
+    # reconfigure from the coordinator's own title sync (which changes only
+    # the entry's title, never its data or options).
+    coordinator.settings_snapshot = (dict(entry.data), dict(entry.options))
+
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
@@ -329,7 +354,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 async def _async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    """A control key added or changed in Configure takes effect immediately."""
+    """A control key added or changed in Configure takes effect immediately.
+
+    A title-only update is not a reconfigure: the coordinator renames the
+    entry to follow the household's address, and reloading for that would
+    tear down every entity once per rename for nothing.
+    """
+    coordinator = hass.data.get(DOMAIN, {}).get(entry.entry_id)
+    if coordinator is not None and getattr(
+        coordinator, "settings_snapshot", None
+    ) == (dict(entry.data), dict(entry.options)):
+        return
     await hass.config_entries.async_reload(entry.entry_id)
 
 

@@ -22,6 +22,7 @@ from homeassistant.exceptions import ConfigEntryAuthFailed, HomeAssistantError
 from homeassistant.helpers.selector import EntitySelector, EntitySelectorConfig
 
 from . import call_control, fetch_feed
+from .naming import household_display
 from .const import (
     CONF_API_KEY,
     CONF_CONTROL_KEY,
@@ -85,7 +86,7 @@ class WashGuideConfigFlow(ConfigFlow, domain=DOMAIN):
                     errors[CONF_CONTROL_KEY] = problem
                 else:
                     household = feed.get("household") or {}
-                    title = household.get("name") or "The Wash Guide"
+                    title = household_display(household) or "The Wash Guide"
                     return self.async_create_entry(
                         title=title,
                         data={CONF_API_KEY: key, CONF_CONTROL_KEY: control},
