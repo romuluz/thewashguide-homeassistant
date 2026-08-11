@@ -96,7 +96,8 @@ parallel truth.
 ## The measured machine (optional, needs a metering plug)
 
 If the washing machine sits on a smart plug that meters power (or the machine
-reports power itself), open **Configure** and pick that power sensor. The
+reports power itself), pick that power sensor as you add the integration, or
+any time later under **Configure**. The
 integration then notices cycles from the power curve: watts rise, the cycle is
 running; ten straight minutes of silence, it finished. Soaks, pauses and
 anti-crease tumbling are forgiven, and a blip too short to have washed

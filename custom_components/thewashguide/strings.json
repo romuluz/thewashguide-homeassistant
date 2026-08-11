@@ -3,10 +3,11 @@
     "step": {
       "user": {
         "title": "Connect The Wash Guide",
-        "description": "In The Wash Guide app, open Settings, find Smart home, and tap Generate connect key. Paste the key here. The control key is optional: it lets Home Assistant act as well as read (post a task, ask the house for a maintenance wash, log a clean), and it needs PRO. You can add it later.",
+        "description": "In The Wash Guide app, open Settings, find Smart home, and tap Generate connect key. Paste the key here. The control key is optional: it lets Home Assistant act as well as read (post a task, ask the house for a maintenance wash, log a clean), and it needs PRO. You can add it later.\n\nIf the washing machine sits on a metering smart plug (or reports its own power), you can pick that power sensor now too: The Wash Guide will notice cycles from the power curve, entirely in your home, and raw power readings are never sent anywhere. Monitoring only: if the plug can switch, this integration never touches the switch. This can also be added or cleared later.",
         "data": {
           "api_key": "Connect key",
-          "control_key": "Control key (optional, PRO)"
+          "control_key": "Control key (optional, PRO)",
+          "power_entity": "Washing machine power sensor (optional)"
         }
       }
     },

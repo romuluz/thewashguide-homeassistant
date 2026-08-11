@@ -2,7 +2,12 @@
 
 The control key is optional and asked for in the same breath, because a PRO
 household that has one wants it in from the start, and a household that has
-not can add it later with Configure without touching the read key.
+not can add it later with Configure without touching the read key. The
+machine's power sensor is offered here too (8 Aug wanted it only in options;
+Nick's ruling 11 Aug): a household adding the integration because they just
+fitted a metering plug should not have to find Configure to finish the
+thought. Both optional fields stay editable in the options flow, which wins
+over what was chosen here.
 """
 
 from __future__ import annotations
@@ -31,12 +36,37 @@ from .const import (
     DOMAIN,
 )
 
-STEP_USER_SCHEMA = vol.Schema(
-    {
-        vol.Required(CONF_API_KEY): str,
-        vol.Optional(CONF_CONTROL_KEY, default=""): str,
-    }
-)
+
+def _user_schema(previous: dict[str, Any] | None = None) -> vol.Schema:
+    """The setup form, repainted with whatever was last typed.
+
+    A rejected key used to wipe the whole form, which was tolerable when it
+    held two boxes you could retype and is not once it holds a sensor you had
+    to hunt for in a dropdown.
+    """
+    prior = previous or {}
+    return vol.Schema(
+        {
+            vol.Required(
+                CONF_API_KEY,
+                description={"suggested_value": prior.get(CONF_API_KEY, "")},
+            ): str,
+            vol.Optional(
+                CONF_CONTROL_KEY,
+                description={"suggested_value": prior.get(CONF_CONTROL_KEY, "")},
+            ): str,
+            # The machine's power sensor, same picker as the options flow.
+            # suggested_value rather than default, so it can be left empty.
+            vol.Optional(
+                CONF_POWER_ENTITY,
+                description={
+                    "suggested_value": prior.get(CONF_POWER_ENTITY) or None
+                },
+            ): EntitySelector(
+                EntitySelectorConfig(domain="sensor", device_class="power")
+            ),
+        }
+    )
 
 
 async def _check_control_key(hass, key: str) -> str | None:
@@ -89,10 +119,16 @@ class WashGuideConfigFlow(ConfigFlow, domain=DOMAIN):
                     title = household_display(household) or "The Wash Guide"
                     return self.async_create_entry(
                         title=title,
-                        data={CONF_API_KEY: key, CONF_CONTROL_KEY: control},
+                        data={
+                            CONF_API_KEY: key,
+                            CONF_CONTROL_KEY: control,
+                            # Setup honours this via the options-then-data
+                            # fallback; a later options save wins over it.
+                            CONF_POWER_ENTITY: user_input.get(CONF_POWER_ENTITY, ""),
+                        },
                     )
         return self.async_show_form(
-            step_id="user", data_schema=STEP_USER_SCHEMA, errors=errors
+            step_id="user", data_schema=_user_schema(user_input), errors=errors
         )
 
     @staticmethod
