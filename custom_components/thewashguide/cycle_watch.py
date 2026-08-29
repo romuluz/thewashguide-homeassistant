@@ -56,8 +56,21 @@ def _iso(ts: float) -> str:
     return datetime.fromtimestamp(ts, tz=timezone.utc).isoformat()
 
 
-async def post_cycle(hass: HomeAssistant, api_key: str, payload: dict) -> None:
-    """One cycle summary up to the cloud; raises so the caller can queue it."""
+async def post_cycle(
+    hass: HomeAssistant,
+    api_key: str,
+    payload: dict,
+    what: str = "cycle summary",
+) -> None:
+    """One message up to the cloud; raises so the caller can queue it.
+
+    [what] names the message in the log, because the two kinds fail for very
+    different reasons and a person reading their log must not be told a
+    summary was rejected when the record is perfectly intact. In particular a
+    cloud endpoint older than v0.5.0 refuses every start note with a 400, and
+    "cycle summary rejected" would be an alarming way to describe a household
+    whose record is arriving exactly as it should.
+    """
     session = async_get_clientsession(hass)
     async with session.post(
         CYCLE_URL,
@@ -68,11 +81,12 @@ async def post_cycle(hass: HomeAssistant, api_key: str, payload: dict) -> None:
         if resp.status < 300:
             return
         detail = (await resp.text()).strip()
-        # A 4xx is the endpoint saying "not with that summary": a blip the
-        # fences caught, a malformed field. Retrying cannot change its mind,
-        # so the summary is dropped with its reason on record.
+        # A 4xx is the endpoint saying "not with that": a blip the fences
+        # caught, a malformed field, or a start note reaching an endpoint too
+        # old to know the word. Retrying cannot change its mind, so it is
+        # dropped with its reason on record.
         if 400 <= resp.status < 500:
-            _LOGGER.warning("cycle summary rejected (%s): %s", resp.status, detail)
+            _LOGGER.warning("%s rejected (%s): %s", what, resp.status, detail)
             return
         raise aiohttp.ClientResponseError(
             resp.request_info, resp.history, status=resp.status, message=detail
@@ -91,6 +105,10 @@ class CycleWatcher:
         self._unsub_quiet = None
         self._unsub_retry = None
         self._queue: list[dict] = []
+        # Minted when the drum starts rather than when it stops (0.5.0), so the
+        # start announcement and the finishing summary name the SAME cycle and
+        # the endpoint can clear exactly the run it just ended.
+        self._cycle_id: str | None = None
 
     def start(self) -> None:
         self._unsub_state = async_track_state_change_event(
@@ -115,10 +133,17 @@ class CycleWatcher:
         except ValueError:
             return
         ts = new_state.last_updated.timestamp()
+        was_running = self._detector.running
         summary = self._detector.sample(ts, watts)
+        # A sample can start a cycle or finish one, never both: finishing
+        # resets the detector and leaves it stopped. So this transition is
+        # unambiguous, and it is the only moment a run begins.
+        if not was_running and self._detector.running:
+            self._cycle_id = uuid.uuid4().hex
+            self._hass.async_create_task(self._announce_start(ts))
         self._arm_quiet_timer()
         if summary:
-            self._hass.async_create_task(self._report(summary))
+            self._finish(summary)
 
     def _arm_quiet_timer(self) -> None:
         """Keep one timer aimed at the end of the current quiet spell."""
@@ -137,15 +162,56 @@ class CycleWatcher:
         self._unsub_quiet = None
         summary = self._detector.tick(datetime.now(timezone.utc).timestamp())
         if summary:
-            self._hass.async_create_task(self._report(summary))
+            self._finish(summary)
         else:
             # Still quiet but not long enough (clock drift), or the spell was
             # broken by a sample that re-armed the timer already.
             self._arm_quiet_timer()
 
-    async def _report(self, summary: CycleSummary) -> None:
+    async def _announce_start(self, started_ts: float) -> None:
+        """Tell the cloud the drum is turning, so the app can say so.
+
+        Deliberately fire-and-forget. This fact is ephemeral and worth nothing
+        late, so it is never queued for retry the way a summary is: a failure
+        costs one wash's live line and the summary that follows is untouched,
+        which is the half that carries the record. An endpoint too old to know
+        the word 'started' answers 400, which post_cycle logs and drops.
+        """
+        cycle_id = self._cycle_id
+        if not cycle_id:
+            return
+        _LOGGER.info("cycle started on %s", self._entity_id)
+        try:
+            await post_cycle(
+                self._hass,
+                self._api_key,
+                {
+                    "event": "started",
+                    "cycle_id": cycle_id,
+                    "started_at": _iso(started_ts),
+                    "source_entity": self._entity_id,
+                },
+                what="cycle start announcement",
+            )
+        except Exception as err:  # noqa: BLE001 - never let this reach the wash
+            _LOGGER.debug("cycle start announcement failed: %s", err)
+
+    @callback
+    def _finish(self, summary: CycleSummary) -> None:
+        """Claim the finished run's id SYNCHRONOUSLY, then report it.
+
+        _report is a task, so reading the id inside it would let a wash started
+        in the meantime hand its own id to the previous wash's summary, which
+        would clear the wrong run and mis-key the record. Taking it here, in the
+        callback that saw the cycle end, closes that window entirely.
+        """
+        cycle_id = self._cycle_id or uuid.uuid4().hex
+        self._cycle_id = None
+        self._hass.async_create_task(self._report(summary, cycle_id))
+
+    async def _report(self, summary: CycleSummary, cycle_id: str) -> None:
         payload = {
-            "cycle_id": uuid.uuid4().hex,
+            "cycle_id": cycle_id,
             "started_at": _iso(summary.started_ts),
             "ended_at": _iso(summary.ended_ts),
             "energy_kwh": summary.energy_kwh,
