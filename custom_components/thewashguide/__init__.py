@@ -341,7 +341,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     )
     if power_entity:
         watcher = CycleWatcher(hass, entry.data[CONF_API_KEY], power_entity)
-        watcher.start()
+        # Awaited rather than fired off: the stored state has to be back in the
+        # detector before the first power reading arrives, or the sample that
+        # would have resumed a wash starts a new one instead.
+        await watcher.async_start()
         entry.async_on_unload(watcher.stop)
 
     # The services exist whether or not a key is present; without one they say
