@@ -101,21 +101,45 @@ any time later under **Configure**. The
 integration then notices cycles from the power curve: watts rise, the cycle is
 running; ten straight minutes of silence, it finished. Soaks, pauses and
 anti-crease tumbling are forgiven, and a blip too short to have washed
-anything is discarded.
+anything is discarded. A second wash started soon after the first is recorded
+separately, because a new wash heats again; two cold washes back to back still
+cannot be told apart, since neither heats. A wash also survives Home Assistant
+restarting part-way through.
 
-When a cycle finishes, two things happen. Locally,
-`thewashguide_cycle_finished` fires on the bus with `started_at`, `ended_at`,
-`duration_seconds`, `energy_kwh`, `peak_watts` and `average_watts`, ready for
-a "machine's done" notification that knows what the cycle actually cost to
-run. And a summary of the same six facts is sent to The Wash Guide, where it
-joins your household's own record, so the app can start learning what your
-machine really does with each kind of wash.
+Once a cycle has run for ten minutes, the integration tells The Wash Guide it
+has started, so the app can say a wash is running. When a cycle finishes, two
+things happen. Locally, `thewashguide_cycle_finished` fires on the bus with
+`started_at`, `ended_at`, `duration_seconds`, `energy_kwh`, `peak_watts` and
+`average_watts`, ready for a "machine's done" notification that knows what the
+cycle actually drew. And a short summary is sent to The Wash Guide, where it
+joins your household's own record, so the app can learn what your machine
+really does with each kind of wash.
 
-Detection happens entirely in your home and only the summary is uploaded: raw
-power readings never leave the house. Monitoring only, always: if the plug can
-switch, this integration never touches the switch, and never puts itself in
-the machine's power path. One honest caution: a washing machine heats water at
-2 to 3 kW, so use a plug properly rated for it, not a lamp-grade one.
+### What leaves your house
+
+Your machine is watched at home. The integration reads the plug, works out
+when a cycle starts and stops, and sends a short summary: when it ran, how
+long, how much electricity it used, and the shape of that use in five-minute
+steps. The individual power readings stay on your own hardware.
+
+### Monitoring only, and the plug
+
+This integration declares sensors and binary sensors and nothing else. There
+is no switch platform in it, so it cannot touch your plug's switch and never
+sits in the machine's power path. A washing machine pulls around 2 to 3 kW
+while it heats, for the better part of an hour, which is more than many cheap
+plugs are built to carry. Use a metering plug from an established brand rather
+than an unbranded clone, and check its continuous rating against the plate on
+your own machine. Choosing and fitting one is your own decision and at your
+own risk.
+
+### Free, and what a membership adds
+
+Everything in this section is free: Home Assistant sees all of it, and your
+cycles join your household's record either way. A membership is what lets the
+app tell you what it means: how long the drum has left once it has learned
+your machine, a notification when it finishes, what each wash cost at your
+electricity price, and what washes at each temperature cost on your machine.
 
 This integration is in early development alongside the app itself; issues and
 automation ideas are very welcome.
